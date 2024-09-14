@@ -3,6 +3,14 @@
         dns cloudflare {env.DNS_PROVIDER_TOKEN};
     }
 
+    handle_errors {
+      respond "{err.status_code} {err.status_text}"
+    }
+
+    handle {
+        respond "Not found!" 404
+    }
+
     @pi host pi.mydomain.com
     handle @pi {
         reverse_proxy raspberry.local:3000;
