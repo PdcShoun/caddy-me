@@ -1,0 +1,16 @@
+services:
+  caddy:
+    image: shounnnnn/caddy:dev
+    
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - caddy-data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    environment:
+      - DNS_PROVIDER_TOKEN={{ REPLACE_WITH_CF_API_TOKEN}}
+    restart: unless-stopped
+
+volumes:
+  caddy-data:

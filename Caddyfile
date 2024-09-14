@@ -1,0 +1,11 @@
+*.mydomain.com {
+    tls {
+        dns cloudflare {env.DNS_PROVIDER_TOKEN};
+    }
+
+    @pi host pi.mydomain.com
+    handle @pi {
+        reverse_proxy raspberry.local:3000;
+    }
+
+}
