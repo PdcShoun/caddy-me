@@ -1,0 +1,4 @@
+my-domain.duckdns.org {
+    header Content-Type text/html
+    respond "<h1>Hello world</h1>"
+}
