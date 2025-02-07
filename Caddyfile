@@ -17,3 +17,7 @@
     }
 
 }
+
+mydomain.duckdns.org {
+    reverse_proxy raspberry.local:3000
+}
