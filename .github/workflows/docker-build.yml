@@ -1,13 +1,89 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Images
 
 on:
   push:
     branches:
       - main
+    paths:
+      - '**/Dockerfile'
+      - '.github/workflows/docker-build.yml'
+  workflow_dispatch:
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      folders: ${{ steps.changes.outputs.folders }}
+      count: ${{ steps.changes.outputs.count }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed folders
+        id: changes
+        run: |
+          # Get all folders containing Dockerfiles
+          folders_with_dockerfiles=$(find . -name "Dockerfile" -not -path "./.github/*" | sed 's|/Dockerfile||' | sed 's|^\./||' | sort)
+
+          # Get changed files compared to main branch
+          if [ "$GITHUB_REF" == "refs/heads/main" ]; then
+            # For push to main, compare with previous commit
+            changed_files=$(git diff --name-only HEAD~1 HEAD)
+          else
+            # For PR, compare with main
+            changed_files=$(git diff --name-only origin/main...HEAD)
+          fi
+
+          # Find folders with Dockerfile changes
+          changed_folders=""
+          count=0
+          for folder in $folders_with_dockerfiles; do
+            if echo "$changed_files" | grep -q "^${folder}/"; then
+              if [ -z "$changed_folders" ]; then
+                changed_folders="\"$folder\""
+              else
+                changed_folders="$changed_folders, \"$folder\""
+              fi
+              count=$((count + 1))
+            fi
+          done
+
+          # If workflow file changed, build all folders
+          if echo "$changed_files" | grep -q "^\.github/workflows/docker-build.yml"; then
+            changed_folders=""
+            count=0
+            for folder in $folders_with_dockerfiles; do
+              if [ -z "$changed_folders" ]; then
+                changed_folders="\"$folder\""
+              else
+                changed_folders="$changed_folders, \"$folder\""
+              fi
+              count=$((count + 1))
+            done
+          fi
+
+          echo "folders=[$changed_folders]" >> $GITHUB_OUTPUT
+          echo "count=$count" >> $GITHUB_OUTPUT
+
+          echo "Changed folders: [$changed_folders]"
+          echo "Count: $count"
+
+      - name: Skip if no changes
+        if: steps.changes.outputs.count == 0
+        run: |
+          echo "No Dockerfile changes detected. Skipping build."
+          echo "folders=[]" >> $GITHUB_OUTPUT
+
   build-and-push:
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.count != '0'
+    strategy:
+      matrix:
+        folder: ${{ fromJSON(needs.detect-changes.outputs.folders) }}
+      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,15 +101,16 @@ jobs:
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Build and push
+      - name: Build and push ${{ matrix.folder }}
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.folder }}
+          file: ${{ matrix.folder }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            shounnnn/caddy:latest
-            shounnnn/caddy:main
-            shounnnn/caddy:${{ steps.vars.outputs.sha_short }}
-          cache-from: type=registry,ref=shounnnn/caddy:buildcache
-          cache-to: type=registry,ref=shounnnn/caddy:buildcache,mode=max
+            shounnnn/caddy-${{ matrix.folder }}:latest
+            shounnnn/caddy-${{ matrix.folder }}:main
+            shounnnn/caddy-${{ matrix.folder }}:${{ steps.vars.outputs.sha_short }}
+          cache-from: type=registry,ref=shounnnn/caddy-${{ matrix.folder }}:buildcache
+          cache-to: type=registry,ref=shounnnn/caddy-${{ matrix.folder }}:buildcache,mode=max
