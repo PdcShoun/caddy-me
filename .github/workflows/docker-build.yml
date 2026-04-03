@@ -33,6 +33,7 @@ jobs:
           push: true
           tags: |
             shounnnn/caddy:latest
+            shounnnn/caddy:main
             shounnnn/caddy:${{ steps.vars.outputs.sha_short }}
           cache-from: type=registry,ref=shounnnn/caddy:buildcache
           cache-to: type=registry,ref=shounnnn/caddy:buildcache,mode=max
