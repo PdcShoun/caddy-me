@@ -8,6 +8,15 @@ on:
       - '**/Dockerfile'
       - '.github/workflows/docker-build.yml'
   workflow_dispatch:
+    inputs:
+      caddy_version:
+        description: 'Caddy version to build'
+        required: false
+        default: '2.11'
+        type: string
+
+env:
+  CADDY_VERSION: ${{ github.event.inputs.caddy_version || '2.11' }}
 
 jobs:
   detect-changes:
@@ -108,6 +117,8 @@ jobs:
           file: ${{ matrix.folder }}/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            CADDY_VERSION=${{ env.CADDY_VERSION }}
           tags: |
             shounnnn/caddy-${{ matrix.folder }}:latest
             shounnnn/caddy-${{ matrix.folder }}:main
