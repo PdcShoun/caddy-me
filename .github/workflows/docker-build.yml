@@ -110,6 +110,15 @@ jobs:
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
+      - name: Set image name
+        id: image
+        run: |
+          if [ "${{ matrix.folder }}" == "caddy" ]; then
+            echo "suffix=" >> $GITHUB_OUTPUT
+          else
+            echo "suffix=-${{ matrix.folder }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push ${{ matrix.folder }}
         uses: docker/build-push-action@v6
         with:
@@ -120,8 +129,8 @@ jobs:
           build-args: |
             CADDY_VERSION=${{ env.CADDY_VERSION }}
           tags: |
-            shounnnn/caddy-${{ matrix.folder }}:latest
-            shounnnn/caddy-${{ matrix.folder }}:main
-            shounnnn/caddy-${{ matrix.folder }}:${{ steps.vars.outputs.sha_short }}
-          cache-from: type=registry,ref=shounnnn/caddy-${{ matrix.folder }}:buildcache
-          cache-to: type=registry,ref=shounnnn/caddy-${{ matrix.folder }}:buildcache,mode=max
+            shounnnn/caddy${{ steps.image.outputs.suffix }}:latest
+            shounnnn/caddy${{ steps.image.outputs.suffix }}:main
+            shounnnn/caddy${{ steps.image.outputs.suffix }}:${{ steps.vars.outputs.sha_short }}
+          cache-from: type=registry,ref=shounnnn/caddy${{ steps.image.outputs.suffix }}:buildcache
+          cache-to: type=registry,ref=shounnnn/caddy${{ steps.image.outputs.suffix }}:buildcache,mode=max
