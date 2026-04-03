@@ -32,7 +32,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            shounnnnn/caddy:latest
-            shounnnnn/caddy:${{ steps.vars.outputs.sha_short }}
-          cache-from: type=registry,ref=shounnnnn/caddy:buildcache
-          cache-to: type=registry,ref=shounnnnn/caddy:buildcache,mode=max
+            shounnnn/caddy:latest
+            shounnnn/caddy:${{ steps.vars.outputs.sha_short }}
+          cache-from: type=registry,ref=shounnnn/caddy:buildcache
+          cache-to: type=registry,ref=shounnnn/caddy:buildcache,mode=max
